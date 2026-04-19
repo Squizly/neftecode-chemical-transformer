@@ -1,0 +1,10 @@
+services:
+  nefte_model:
+    build: .
+    container_name: wd40_container
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+      - ./weights:/app/weights
+    # Если переменная MODE не задана, подставится "inference"
+    command: ["${MODE:-inference}"]
