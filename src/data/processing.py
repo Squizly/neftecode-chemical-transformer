@@ -240,7 +240,7 @@ class DataPreprocessor:
 
         return res_clean, targets
     
-    def augment_data(self, df, target_scenarios=1000, val_size=50, noise_std=0.02, seed=SEED):
+    def augment_data(self, df, target_scenarios=1000, val_size=50, noise_std=0.02):
         unique_ids = df['scenario_id'].unique()
         train_ids, val_ids = train_test_split(unique_ids, test_size=val_size, random_state=42)
         
@@ -252,13 +252,11 @@ class DataPreprocessor:
         needed = target_scenarios - num_base
         
         multiplier = (needed // num_base) + 1
-        
-        rng = np.random.default_rng(seed)
 
         for i in range(1, multiplier + 1):
             aug_copy = train_base.copy()
 
-            noise = rng.normal(0, noise_std, size=len(aug_copy))
+            noise = np.random.normal(0, noise_std, size=len(aug_copy))
             aug_copy['mass_norm'] += noise
             aug_copy['mass_norm'] = aug_copy['mass_norm'].clip(lower=0.0001)
             

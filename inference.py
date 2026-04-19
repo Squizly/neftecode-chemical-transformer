@@ -10,16 +10,13 @@ from src.data.processing import build_component_vocab, get_feature_columns, buil
 from src.data.dataset import DOTDataset, collate_fn
 from src.models.set_transformer import SetTransformerDOT
 
-WEIGHTS_DIR = os.environ.get("WEIGHTS_DIR", "weights/wd-40")
-
 if __name__ == "__main__":
 
-    print(f"Инференс использует веса из папки: {WEIGHTS_DIR}")
 
     print("--- Запуск инференса ---")
 
     print(f"Загрузка конфигурации модели...")
-    config = joblib.load(f"{WEIGHTS_DIR}/model_config.pkl")
+    config = joblib.load(f"weights/wd-40/model_config.pkl")
 
     feature_cols = config['feature_cols']
     comp_to_idx = config['comp_to_idx']
@@ -51,9 +48,9 @@ if __name__ == "__main__":
     print(f"Начало цикла ансамблирования (N_SEEDS={N_ENSEMBLE_SEEDS})...")
     for seed_i in range(N_ENSEMBLE_SEEDS):
         print(f"Обработка модели {seed_i + 1}/{N_ENSEMBLE_SEEDS}")
-        f_sc = joblib.load(f"{WEIGHTS_DIR}/feat_scaler_seed_{seed_i}.pkl")
-        g_sc = joblib.load(f"{WEIGHTS_DIR}/global_scaler_seed_{seed_i}.pkl")
-        t_sc = joblib.load(f"{WEIGHTS_DIR}/target_scaler_seed_{seed_i}.pkl")
+        f_sc = joblib.load(f"weights/wd-40/feat_scaler_seed_{seed_i}.pkl")
+        g_sc = joblib.load(f"weights/wd-40/global_scaler_seed_{seed_i}.pkl")
+        t_sc = joblib.load(f"weights/wd-40/target_scaler_seed_{seed_i}.pkl")
 
         model = SetTransformerDOT(
             config['len_feature_cols']+1,
@@ -66,7 +63,7 @@ if __name__ == "__main__":
             DROPOUT
         ).to(DEVICE)
 
-        model.load_state_dict(torch.load(f"{WEIGHTS_DIR}/model_seed_{seed_i}.pth", map_location=DEVICE))
+        model.load_state_dict(torch.load(f"weights/wd-40//model_seed_{seed_i}.pth", map_location=DEVICE))
         model.eval()
 
         test_ds = DOTDataset(test_scenarios, feat_scaler=f_sc, global_scaler=g_sc, target_scaler=t_sc, augment=False)
