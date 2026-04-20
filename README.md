@@ -10,9 +10,9 @@
 <h1 align="center">Neftecode Chemical Transformer</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/PyTorch-2.x-ee4c2c?logo=pytorch&logoColor=white" alt="PyTorch" />
+  <img src="https://img.shields.io/badge/PyTorch-2.8.0%2Bcu128-ee4c2c?logo=pytorch&logoColor=white" alt="PyTorch" />
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
-  <img src="https://img.shields.io/badge/License-Not%20Specified-lightgrey" alt="License" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" />
 </p>
 
 <p align="center">
