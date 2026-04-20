@@ -206,6 +206,6 @@ docker compose up --build
 |---|---|---|
 | Stepan Shepilov | Captain / ML Research | [GitHub](https://github.com/stepanshepilov) |
 | Petr Kolesov | Data Scientist / MLOps | [GitHub](https://github.com/Squizly) |
-| Maxim Starpesthtes | Data Scientist | [GitHub](https://github.com/razzgrape) |
+| Maxim Starpeshtes | Data Scientist | [GitHub](https://github.com/razzgrape) |
 | Nikolay Mikhailov | Data Scientist | [GitHub](https://github.com/nick5165) |
 | Anastasiya Nikolaeva | Domain Expert / ML Engineer | [GitHub](https://github.com/mo-xi-to) |
