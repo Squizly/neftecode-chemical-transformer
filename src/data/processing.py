@@ -41,7 +41,6 @@ CLASS_TEMPLATES = {
     'Соединение_молибдена': 'CCCCCCCCOP(=S)(S)S[Mo](=S)S'
 }
 
-# Строго заданный порядок колонок для Test
 TEST_GOLDEN_COLUMNS = [
     'scenario_id', 'component', 'temp', 'time', 'biofuel', 'catalyst',
     'mass_norm', 'hidden_pct', 'logp', 'mol_wt', 'rings', 'cnt_Ca', 'cnt_S',
@@ -103,7 +102,6 @@ TEST_GOLDEN_COLUMNS = [
     'VISC_Кинематическая вязкость_NoMethod'
 ]
 
-# Для Train добавляем в конец целевые переменные
 GOLDEN_COLUMNS = TEST_GOLDEN_COLUMNS + ['target_visc', 'target_oxid', 'target_visc_log']
 
 def build_component_vocab(train_df, test_df):
@@ -117,36 +115,66 @@ def get_feature_columns(df):
 
 def build_scenarios(mixture_df, comp_to_idx, feature_cols, is_train=True):
     scenarios = []
+
     for sid, grp in mixture_df.groupby("scenario_id"):
         comp_features, comp_ids, raw_doses = [], [], []
+
         for _, row in grp.iterrows():
             comp_name = row["component"]
+
             raw_doses.append(row[DOSE_COL])
+
             comp_ids.append(comp_to_idx.get(comp_name, 0))
             feats = row[feature_cols].values.astype(np.float32)
+
             comp_features.append(np.concatenate([[row[DOSE_COL]], feats]))
+        
         first_row = grp.iloc[0]
-        global_feats = np.array([first_row['temp'], first_row['time'], first_row['biofuel'], first_row['catalyst']], dtype=np.float32)
-        scenario = {"components": np.stack(comp_features), "comp_ids": np.array(comp_ids, dtype=np.int64),
-                    "global_feats": global_feats, "raw_doses": np.array(raw_doses, dtype=np.float32), "scenario_id": sid}
+        global_feats = np.array(
+            [first_row['temp'], first_row['time'], first_row['biofuel'], first_row['catalyst']], 
+            dtype=np.float32
+        )
+
+        scenario = {"components": np.stack(comp_features), 
+                    "comp_ids": np.array(comp_ids, dtype=np.int64),
+                    "global_feats": global_feats, 
+                    "raw_doses": np.array(raw_doses, dtype=np.float32), 
+                    "scenario_id": sid
+        }
+
         if is_train:
-            scenario["targets"] = np.array([first_row[TARGET_COLS_INTERNAL[0]], first_row[TARGET_COLS_INTERNAL[1]]], dtype=np.float32)
+            scenario["targets"] = np.array(
+                [first_row[TARGET_COLS_INTERNAL[0]], first_row[TARGET_COLS_INTERNAL[1]]], 
+                dtype=np.float32
+            )
+        
         scenarios.append(scenario)
+
     return scenarios
 
 def parse_numeric(val):
     s = str(val).replace(',', '.').replace('<', '').replace('>', '').strip()
     nums = re.findall(r'-?\d+\.?\d*', s)
-    if len(nums) == 2 and '-' in s: return (float(nums[0]) + float(nums[1])) / 2
+
+    if len(nums) == 2 and '-' in s: 
+        return (float(nums[0]) + float(nums[1])) / 2
+    
     return float(nums[0]) if nums else np.nan
 
 def get_phys_category(name):
     n = name.lower()
-    if any(x in n for x in ['плотность', 'density']): return 'DENS'
-    if any(x in n for x in ['вязкость', 'viscosity', 'индекс']): return 'VISC'
-    if any(x in n for x in ['доля', 'содержание', 'состав', 'металл', 'азот', 'сера', 'фосфор', 'кальций', 'цинк', 'щелочное', 'кислотное']): return 'COMP'
-    if any(x in n for x in ['температура', 'точка', '°c']): return 'TEMP'
-    if any(x in n for x in ['энергия', 'эв', 'потенциал']): return 'ENER'
+
+    if any(x in n for x in ['плотность', 'density']): 
+        return 'DENS'
+    if any(x in n for x in ['вязкость', 'viscosity', 'индекс']): 
+        return 'VISC'
+    if any(x in n for x in ['доля', 'содержание', 'состав', 'металл', 'азот', 'сера', 'фосфор', 'кальций', 'цинк', 'щелочное', 'кислотное']): 
+        return 'COMP'
+    if any(x in n for x in ['температура', 'точка', '°c']): 
+        return 'TEMP'
+    if any(x in n for x in ['энергия', 'эв', 'потенциал']): 
+        return 'ENER'
+    
     return 'OTHER'
 
 def is_valid_smiles(v):
@@ -155,9 +183,12 @@ def is_valid_smiles(v):
 
 def get_rdkit_descriptors(smiles):
     mol = Chem.MolFromSmiles(smiles)
+
     if not mol: 
         return pd.Series([0]*6, index=['mol_wt', 'logp', 'cnt_S', 'cnt_Zn', 'cnt_Ca', 'rings'])
+    
     syms = [a.GetSymbol() for a in mol.GetAtoms()]
+
     return pd.Series({
         'mol_wt': Descriptors.MolWt(mol), 
         'logp': Descriptors.MolLogP(mol),
@@ -191,7 +222,10 @@ class DataPreprocessor:
         
         for col in piv_t.columns:
             typical_values = piv_a['component'].map(piv_t[col])
-            if col in piv_a.columns: piv_a[col] = piv_a[col].fillna(typical_values)
+
+            if col in piv_a.columns: 
+                piv_a[col] = piv_a[col].fillna(typical_values)
+            
             else: piv_a[col] = typical_values
             
         comp_features_raw = piv_a.drop(columns=[c for c in piv_a.columns if piv_a[c].nunique() <= 1 and c not in ['component', 'batch']])
@@ -200,11 +234,16 @@ class DataPreprocessor:
         cas_map = props[props['param'].str.contains('CAS', na=False)].groupby('component')['value'].first().apply(lambda x: re.search(r'\d{2,7}-\d{2}-\d', str(x)).group(0) if re.search(r'\d{2,7}-\d{2}-\d', str(x)) else None).dropna().to_dict()
         
         chem_rows = []
+
         for c in all_comps:
             s = s_dict.get(c)
             cas = cas_map.get(c)
-            if not s and cas in MANUAL_SMILES_DB: s = MANUAL_SMILES_DB[cas]
-            if not s: s = CLASS_TEMPLATES.get(str(c).split('_')[0], "CCCCCCCCCCCCCCCCCCCC")
+
+            if not s and cas in MANUAL_SMILES_DB: 
+                s = MANUAL_SMILES_DB[cas]
+
+            if not s: 
+                s = CLASS_TEMPLATES.get(str(c).split('_')[0], "CCCCCCCCCCCCCCCCCCCC")
             
             desc = get_rdkit_descriptors(s)
             chem_rows.append({'component': c, **desc.to_dict()})
@@ -275,20 +314,16 @@ class DataPreprocessor:
         return final_df, val_df
 
     def align_schema(self, df, target_columns):
-        """Выравнивает датафрейм по эталонному списку колонок."""
         df_aligned = df.copy()
         
-        # Удаляем лишние колонки
         extra_cols = set(df_aligned.columns) - set(target_columns)
         if extra_cols:
             df_aligned = df_aligned.drop(columns=list(extra_cols))
             
-        # Восстанавливаем недостающие колонки нулями
         missing_cols = set(target_columns) - set(df_aligned.columns)
         for col in missing_cols:
             df_aligned[col] = 0
             
-        # Возвращаем В СТРОГО ЗАДАННОМ ПОРЯДКЕ
         return df_aligned[target_columns]
 
     def build_train_dataset(self, train_path):
@@ -312,15 +347,12 @@ class DataPreprocessor:
         return train_aligned, val_aligned, feature_cols, comp_to_idx
 
     def build_test_dataset(self, test_path):
-        """ВЫЗЫВАЕТСЯ ТОЛЬКО ПРИ ИНФЕРЕНСЕ"""
         test_raw = pd.read_csv(test_path).rename(columns=RENAME_MAP)
         all_comps = test_raw['component'].unique()
         
-        # Обработка свойств
         self.process_properties(all_comps)
         f_test, _ = self.finalize_df(test_raw, is_train=False)
         
-        # Вызываем метод выравнивания строго по TEST_GOLDEN_COLUMNS
         f_test = self.align_schema(f_test, TEST_GOLDEN_COLUMNS).fillna(0)
         
         return f_test

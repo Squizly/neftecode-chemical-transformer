@@ -14,5 +14,4 @@ COPY inference.py /app/
 
 COPY weights/ /app/weights/
 
-# Исправляем команду запуска (нужно расширение .py)
 CMD ["python", "inference.py"]
